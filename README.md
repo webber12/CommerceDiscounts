@@ -1,1 +1,2 @@
 # CommerceDiscounts
+init
