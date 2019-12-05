@@ -12,4 +12,4 @@
  * @internal    @modx_category Commerce
  */
  
-require MODX_BASE_PATH.'assets/plugins/CommerceDiscounts/snippet.CommerceDiscounts.php';
+return require MODX_BASE_PATH . 'assets/plugins/CommerceDiscounts/snippet.CommerceDiscounts.php';
