@@ -165,9 +165,8 @@ class DiscountsController extends \WebixTable\MainController
         $info['type'] = !empty($_REQUEST['condition_type']) ? $_REQUEST['condition_type'] : 1;
         $info['count'] = !empty($_REQUEST['condition_count']) ? $_REQUEST['condition_count'] : 0;
         $info['item'] = !empty($_REQUEST['condition_item']) ? $_REQUEST['condition_item'] : 1;
-        $up['info'] = json_encode(['conditions' => $info]);
-        $info['exclude_sales'] = !empty($_REQUEST['exclude_sales']) ? 1 : 0;
-        $up['elements'] = json_encode(['exclude_sales' => $info['exclude_sales']]);
+        $exclude_sales = !empty($_REQUEST['exclude_sales']) ? 1 : 0;
+        $up['info'] = json_encode(['conditions' => $info, 'exclude_sales' => $exclude_sales]);
         $up = $this->modx->db->escape($up);
         if (empty($up['date_start'])) $up['date_start'] = NULL;
         if (empty($up['date_finish'])) $up['date_finish'] = NULL;
@@ -177,13 +176,12 @@ class DiscountsController extends \WebixTable\MainController
     protected function invokeOnBeforeLoadCartForm($data)
     {
         $info = !empty($data['info']) ? json_decode($data['info'], true) : [];
-        $elements = !empty($data['elements']) ? json_decode($data['elements'], true) : [];
         $data['discount'] = (double)$data['discount'];
         $data['discount_summ'] = (double)$data['discount_summ'];
         $data['condition_type'] = !empty($info['conditions']['type']) ? $info['conditions']['type'] : 1;
         $data['condition_count'] = !empty($info['conditions']['count']) ? $info['conditions']['count'] : 0;
         $data['condition_item'] = !empty($info['conditions']['item']) ? $info['conditions']['item'] : 1;
-        $data['exclude_sales'] = isset($elements['exclude_sales']) ? $elements['exclude_sales'] : 1;
+        $data['exclude_sales'] = isset($info['exclude_sales']) ? $info['exclude_sales'] : 1;
         unset($data['info'], $data['elements'], $data['date_create']);
         return $data;
     }

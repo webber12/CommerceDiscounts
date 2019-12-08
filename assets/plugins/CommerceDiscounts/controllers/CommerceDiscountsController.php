@@ -399,7 +399,7 @@ class CommerceDiscountsController
     
     protected function checkExcludeSale($discountRow)
     {
-        return !empty($discountRow['elements']) && !empty(json_decode($discountRow['elements'], true)['exclude_sales']);
+        return !empty($discountRow['info']) && !empty(json_decode($discountRow['info'], true)['exclude_sales']);
     }
 
     protected function makeExcludeSale($cart)
