@@ -146,14 +146,16 @@ class CommerceDiscountsController
     protected function getFitDiscount($discounts)
     {
         $discountSumm = 0;
+        $discountFormatSumm = 0;
         $discountRow = [];
         if (!empty($discounts)) {
             $sums = array_column($discounts, 'discountSumm');
             $discountSumm = max($sums);
             $key = array_search($discountSumm, $sums);
             $discountRow = $discounts[$key]['discountRow'];
+            $discountFormatSumm = $discountRow['text'] == '%' ? $discountRow['value'] . $discountRow['text'] : ci()->currency->format($discountSumm);
         }
-        return ['discountSumm' => $discountSumm, 'discountRow' => $discountRow];
+        return ['discountSumm' => $discountSumm, 'discountFormatSumm' => $discountFormatSumm, 'discountRow' => $discountRow];
     }
     
     protected function validateDiscount($name = 'cart', $params = [], $discountRow = [], $cart = [])
@@ -203,7 +205,7 @@ class CommerceDiscountsController
         if (!empty($info['conditions'])) {
             $conditions = $info['conditions'];
             switch (true) {
-                case ($conditions['item'] == 2 && $conditions['type'] == 2 && $params['total'] >= $conditions['count']):
+                case ($conditions['item'] == 2 && $conditions['type'] == 2 && $params['total'] >= $this->convertFromDefault($conditions['count'])):
                     //начиная с определенной суммы в корзине
                     $check = true;
                     break;
@@ -236,7 +238,7 @@ class CommerceDiscountsController
                 case ($conditions['item'] == 2 && $conditions['type'] == 2):
                     //начиная с определенной суммы за данный товар
                     $summ = $params['item']['count'] * $params['item']['price'] + $productCartStat['summ'];
-                    $check = $summ >= $conditions['count'];
+                    $check = $summ >= $this->convertFromDefault($conditions['count']);
                     break;
                 case ($conditions['item'] == 1 && $conditions['type'] == 2):
                     //начиная с определенного количества данного товара в корзине
@@ -345,7 +347,7 @@ class CommerceDiscountsController
             $discountRow['text'] = '%';
         } else if (!empty($discountRow['discount_summ']) && (double)$discountRow['discount_summ'] > 0) {
             //скидка в твердой сумме
-            $discount = (double)$discountRow['discount_summ'];
+            $discount = $this->convertFromDefault((double)$discountRow['discount_summ']);
             if ($discount > $cart_summ) {
                 $discount = $cart_summ;
             }
@@ -366,7 +368,7 @@ class CommerceDiscountsController
             $discountRow['text'] = '%';
         } else if (!empty($discountRow['discount_summ']) && (double)$discountRow['discount_summ'] > 0) {
             //скидка в твердой сумме
-            $discount = (double)$discountRow['discount_summ'];
+            $discount = $this->convertFromDefault((double)$discountRow['discount_summ']);
             if ($discount > $params['item']['price']) {
                 $discount = $params['item']['price'];
             }
@@ -502,5 +504,13 @@ class CommerceDiscountsController
         unset($item['hash'], $item['row']);
         return $item;
     }
-    
+
+    protected function convertFromDefault($amount)
+    {
+        if (function_exists('ci')) {
+            $amount = ci()->currency->convertFromDefault($amount);
+        }
+        return $amount;
+    }
+
 }

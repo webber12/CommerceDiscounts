@@ -10,7 +10,7 @@ $parser = \DLTemplate::getInstance($modx);
 
 switch ($action) {
     case 'info':
-        $tpl = !empty($tpl) ? $tpl : '@CODE:-[+amount+] [+unit+]';
+        $tpl = !empty($tpl) ? $tpl : '@CODE:(-[+formatSumm+])';
         $items = $cart->getItems();
         if (!empty($row) && !empty($items[$row]['meta']['CommerceDiscounts'])) {
             $out = $parser->parseChunk($tpl, $items[$row]['meta']['CommerceDiscounts']);
