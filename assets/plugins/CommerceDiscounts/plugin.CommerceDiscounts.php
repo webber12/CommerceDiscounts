@@ -64,7 +64,7 @@ switch ($e->name) {
         if (!empty($discount) && !empty($discount['discountSumm'])) {
             $params['item']['meta']['CommerceDiscounts']['summ'] = $discount['discountSumm'];
             $params['item']['meta']['CommerceDiscounts']['amount'] = $discount['discountRow']['value'];
-            $params['item']['meta']['CommerceDiscounts']['formatSumm'] = $discount['discountRow']['discountFormatSumm'];
+            $params['item']['meta']['CommerceDiscounts']['formatSumm'] = $discount['discountFormatSumm'];
             $params['item']['meta']['CommerceDiscounts']['unit'] = $discount['discountRow']['text'];
             $params['item']['meta']['CommerceDiscounts']['name'] = $discount['discountRow']['name'];
             $params['item']['meta']['CommerceDiscounts']['id'] = $discount['discountRow']['id'];
