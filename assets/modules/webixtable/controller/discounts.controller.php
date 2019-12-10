@@ -291,7 +291,7 @@ class DiscountsController extends \WebixTable\MainController
             $id = (int)$_REQUEST['id'];
             $tree = [];
             if (!empty($_REQUEST['checked'])) {
-                $tree = json_decode($_REQUEST['checked'], true);
+                $tree = is_numeric($_REQUEST['checked']) ? array($_REQUEST['checked']) : json_decode($_REQUEST['checked'], true);
                 if ($this->modx->db->update(['elements' => json_encode($tree)], $this->getTable(), "id=" . $id)) {
                     $responce = 'ok';
                 }
@@ -381,7 +381,7 @@ class DiscountsController extends \WebixTable\MainController
             $id = (int)$_REQUEST['id'];
             $tree = [];
             if (!empty($_REQUEST['checked'])) {
-                $tree = json_decode($_REQUEST['checked'], true);
+                $tree = is_numeric($_REQUEST['checked']) ? array($_REQUEST['checked']) : json_decode($_REQUEST['checked'], true);
                 if ($this->modx->db->update(['elements' => json_encode($tree)], $this->getTable(), "id=" . $id)) {
                     $responce = 'ok';
                 }
