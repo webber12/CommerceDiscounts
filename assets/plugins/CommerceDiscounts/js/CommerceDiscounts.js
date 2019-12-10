@@ -50,11 +50,11 @@ $(document).ready(function(){
     CommerceDiscounts.bind();
 
     $(document).on("commerce-discounts-recount-discount-ok", function(){
-        Commerce.updateCarts();
+        Commerce.reloadCarts();
     })
     
     $(document).on("commerce-discounts-remove-discount-ok", function(){
-        Commerce.updateCarts();
+        Commerce.reloadCarts();
     })
 
 })
