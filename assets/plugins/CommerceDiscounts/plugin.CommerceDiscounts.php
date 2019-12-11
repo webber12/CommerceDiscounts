@@ -26,7 +26,7 @@ switch ($e->name) {
         $controller->regScripts();
         $controller->setActiveDiscountsForUser();
 
-        //пересчет корзины так, чтобы учитывались все скидки
+        //пересчет корзины при изменениях так, чтобы учитывались все скидки
         if ($_REQUEST['q'] == 'cart/update/discount') {
             $cart = ci()->carts->getCart('products');
             switch ($_REQUEST['action']) {
@@ -34,11 +34,20 @@ switch ($e->name) {
                     $row = $modx->db->escape($_REQUEST['row']);
                     $newCount = $modx->db->escape($_REQUEST['count']);
                     $responce = $controller->recountCartItems($cart, $row, $newCount);
+                    $controller->getDiscount('productCart', ['cartItems' => ci()->carts->getCart('products')->getItems()]);
                     break;
+
                 case 'remove':
                     $row = $modx->db->escape($_REQUEST['row']);
                     $responce = $controller->removeCartRow($cart, $row);
+                    $controller->getDiscount('productCart', ['cartItems' => ci()->carts->getCart('products')->getItems()]);
                     break;
+
+                case 'update': 
+                    $controller->getDiscount('productCart', ['cartItems' => ci()->carts->getCart('products')->getItems()]);
+                    $responce = ['status' => 'reload'];
+                    break;
+
                 default:
                     $responce = ['status' => 'silent'];
                     break;
@@ -48,7 +57,8 @@ switch ($e->name) {
         }
         break;
         
-    case 'OnCollectSubtotals': 
+    case 'OnCollectSubtotals':
+        //скидки, применяемые ко всей сумме корзины
         $discount = $controller->getDiscount('cart', $params);
         if (!empty($discount) && !empty($discount['discountSumm'])) {
             $params['total'] -= $discount['discountSumm'];
@@ -60,28 +70,40 @@ switch ($e->name) {
         break;
     
     case 'OnBeforeCartItemAdding':
+        //скидки, применяемые к конкретному товару при его добавлении
         $discount = $controller->getDiscount('product', $params);
+        $originalPrice = $newPrice = !empty($params['item']['meta']['CommerceDiscounts']['originalPrice']) ? $params['item']['meta']['CommerceDiscounts']['originalPrice'] : $params['item']['price'];
         if (!empty($discount) && !empty($discount['discountSumm'])) {
-            $params['item']['meta']['CommerceDiscounts']['summ'] = $discount['discountSumm'];
-            $params['item']['meta']['CommerceDiscounts']['amount'] = $discount['discountRow']['value'];
-            $params['item']['meta']['CommerceDiscounts']['formatSumm'] = $discount['discountFormatSumm'];
-            $params['item']['meta']['CommerceDiscounts']['unit'] = $discount['discountRow']['text'];
-            $params['item']['meta']['CommerceDiscounts']['name'] = $discount['discountRow']['name'];
-            $params['item']['meta']['CommerceDiscounts']['id'] = $discount['discountRow']['id'];
-            $params['item']['meta']['CommerceDiscounts']['originalPrice'] = $params['item']['price'];
-            $params['item']['price'] -= $discount['discountSumm'];
+            $params['item']['meta']['CommerceDiscounts'] = $controller->getMeta([
+                'summ' => $discount['discountSumm'],
+                'amount' => $discount['discountRow']['value'],
+                'formatSumm' => $discount['discountFormatSumm'],
+                'unit' => $discount['discountRow']['text'],
+                'name' => $discount['discountRow']['name'],
+                'id' => $discount['discountRow']['id'],
+                'originalPrice' => $params['item']['price'],
+            ]);
+            $newPrice -= $discount['discountSumm'];
         }
+        if (!empty($_SESSION['implementDiscount']) && ($originalPrice - $_SESSION['implementDiscount']['discountSumm']) < $newPrice) {
+            $discount = $_SESSION['implementDiscount'];
+            $params['item']['meta']['CommerceDiscounts'] = $controller->getMeta([
+                'summ' => $discount['discountSumm'],
+                'amount' => $discount['discountRow']['value'],
+                'formatSumm' => $discount['discountFormatSumm'],
+                'unit' => $discount['discountRow']['text'],
+                'name' => $discount['discountRow']['name'],
+                'id' => $discount['discountRow']['id'],
+                'originalPrice' => $params['item']['price'],
+            ]);
+            $newPrice = $originalPrice - $_SESSION['implementDiscount']['discountSumm'];
+        }
+        $params['item']['price'] = $newPrice;
         break;
     
     case 'OnBeforeCartItemUpdating':
-        //todo
-        /*if (!empty($_POST['action']) && $_POST['action'] == 'cart/update') {
-            $cart = ci()->carts->getCart('products');
-            $items = $cart->getItems();
-            //$params['attributes']['price'] = 120;
-        }*/
         break;
-        
+
     case 'OnOrderSaved':
         $controller->destroyDiscounts();
         break;

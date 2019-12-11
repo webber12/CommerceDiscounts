@@ -124,7 +124,7 @@ class CommerceDiscountsController
     {
         $activeDiscounts = [];
         if (!empty($this->getActiveDiscounts())) {
-            $q = $this->modx->db->select("*", $this->table, "id IN (" . implode(',', $this->getActiveDiscounts()) . ") AND discount_type IN (1,2)", "menuindex DESC");
+            $q = $this->modx->db->select("*", $this->table, "id IN (" . implode(',', $this->getActiveDiscounts()) . ") AND (discount_type IN (1,2) AND `info` NOT LIKE '%\"type\":\"3\"%')", "menuindex DESC");
             while ($row = $this->modx->db->getRow($q)) {
                 $activeDiscounts[] = $row;
             }
@@ -141,6 +141,52 @@ class CommerceDiscountsController
             
             return $this->getFitDiscount($discounts);
         }
+    }
+
+    protected function getDiscountProductCart($params = [])
+    {
+        $activeDiscounts = [];
+        if (!empty($this->getActiveDiscounts())) {
+            $q = $this->modx->db->select("*", $this->table, "id IN (" . implode(',', $this->getActiveDiscounts()) . ") AND (discount_type IN (1,2) AND `info` LIKE '%\"type\":\"3\"%')", "menuindex DESC");
+            while ($row = $this->modx->db->getRow($q)) {
+                $activeDiscounts[] = $row;
+            }
+        }
+        if (!empty($activeDiscounts)) {
+            $cart = $params['cartItems'];
+            $cartItemsIds = [];
+            foreach ($cart as $item) {
+                if (!in_array($item['id'], $cartItemsIds)) {
+                    $cartItemsIds[] = $item['id'];
+                }
+            }
+            if (!empty($cartItemsIds)) {
+                foreach ($cartItemsIds as $cartItemsId) {
+                    $discounts = [];
+                    foreach ($activeDiscounts as $activeDiscount) {
+                        if ($this->validateDiscount('productCart', ['item' => ['id' => $cartItemsId]], $activeDiscount, $cart)) {
+                            $discounts[] = $this->makeDiscountAmount('productCart', ['item' => ['id' => $cartItemsId]], $activeDiscount, $cart);
+                        }
+                    }
+                    if (!empty($discounts)) {
+                        $fitDiscount = $this->getFitDiscount($discounts);
+                        $this->implementDiscountProductCart($cartItemsId, $fitDiscount, $cart);
+                    }
+                }
+            }
+            //return $this->getFitDiscount($discounts);
+        }
+    }
+    
+    protected function implementDiscountProductCart($cartItemsId, $fitDiscount, $cart)
+    {
+        $newItems = $this->restoreItems($cart, $cartItemsId);
+        $_SESSION['implementDiscount'] = [ 'discountSumm' => $fitDiscount['discountSumm'], 'discountRow' => $fitDiscount['discountRow'], 'discountFormatSumm' => $fitDiscount['discountFormatSumm'] ];
+        ci()->carts->getCart('products')->removeById($cartItemsId);
+        foreach ($newItems as $newItem) {
+            ci()->carts->getCart('products')->add( $newItem );
+        }
+        unset($_SESSION['implementDiscount']);
     }
     
     protected function getFitDiscount($discounts)
@@ -257,6 +303,33 @@ class CommerceDiscountsController
         }
         return $check;
     }
+
+    protected function checkConditionsProductCart($params, $discountRow, $cart)
+    {
+        $check = false;
+        $id = $params['item']['id'];
+        $check = $this->checkElementsProduct($params, $discountRow, $cart);
+        if (!$check) return $check;
+        
+        $check = false;
+        $newItems = $this->restoreItems($cart, $id);
+        $productCartStat = $this->getProductCartStat($cart, $id);
+        $conditions = json_decode($discountRow['info'], true)['conditions'];
+        
+        switch (true) {
+            case ($conditions['item'] == 1 && $productCartStat['count'] >= $conditions['count']):
+                //при достижении определенного количества штук
+                $check = true;
+                break;
+            case ($conditions['item'] == 2 && $productCartStat['summ'] >= $this->convertFromDefault($conditions['count'])):
+                //при достижении определенной суммы
+                $check = true;
+                break;
+            default:
+                break;
+        }
+        return $check;
+    }
     
     protected function checkElementsProduct($params, $discountRow, $cart)
     {
@@ -290,6 +363,11 @@ class CommerceDiscountsController
     }
     
     protected function checkRulesProduct($params, $discountRow, $cart)
+    {
+        return true;
+    }
+    
+    protected function checkRulesProductCart($params, $discountRow, $cart)
     {
         return true;
     }
@@ -378,6 +456,34 @@ class CommerceDiscountsController
         }
         return [ 'discountSumm' => $discount, 'discountRow' => $discountRow ];
     }
+
+    protected function makeDiscountAmountProductCart($params, $discountRow, $cart)
+    {
+        $discount = 0;
+        $originalPrice = 0;
+        foreach ($cart as $item) {
+            if ($item['id'] == $params['item']['id']) {
+                $originalPrice = !empty($item['meta']['CommerceDiscounts']['originalPrice']) ? $item['meta']['CommerceDiscounts']['originalPrice'] : $item['price'];
+                break;
+            }
+        }
+        if (!empty($discountRow['discount']) && (double)$discountRow['discount'] > 0) {
+            //скидка в процентах в приоритете
+            $discount = round($originalPrice * (double)$discountRow['discount'] / 100, $this->precision);
+            $discountRow['value'] = (double)$discountRow['discount'];
+            $discountRow['text'] = '%';
+        } else if (!empty($discountRow['discount_summ']) && (double)$discountRow['discount_summ'] > 0) {
+            //скидка в твердой сумме
+            $discount = $this->convertFromDefault((double)$discountRow['discount_summ']);
+            if ($discount > $originalPrice) {
+                $discount = $originalPrice;
+            }
+            $discountRow['value'] = (double)$discount;
+            $discountRow['text'] = $this->currency;
+            $discount = round($discount, $this->precision);
+        }
+        return [ 'discountSumm' => $discount, 'discountRow' => $discountRow ];
+    }
     
     protected function getProductCartStat($cart, $product_id)
     {
@@ -428,7 +534,7 @@ class CommerceDiscountsController
                 for ($i = 0; $i < $diff; $i++) {
                     $cart->add( $newItem );
                 }
-                $responce = ['status' => 'recount-discount-ok'];
+                $responce = ['status' => 'recount'];
             } else if ($diff < 0) {
                 
                 //сначала отнять нужное количество из нужной строки, а остальные строки 
@@ -446,7 +552,7 @@ class CommerceDiscountsController
                 foreach ($newItems as $newItem) {
                     $cart->add( $newItem );
                 }
-                $responce = ['status' => 'recount-discount-ok'];
+                $responce = ['status' => 'recount'];
             } else {}
         }
         return $responce;
@@ -475,7 +581,7 @@ class CommerceDiscountsController
         foreach ($newItems as $newItem) {
             $cart->add( $newItem );
         }
-        $responce = ['status' => 'remove-discount-ok'];
+        $responce = ['status' => 'remove'];
         return $responce;
     }
     
@@ -511,6 +617,25 @@ class CommerceDiscountsController
             $amount = ci()->currency->convertFromDefault($amount);
         }
         return $amount;
+    }
+    
+    public function getMeta($meta = [])
+    {
+        return $meta;
+    }
+    
+    public function getHashes($withCount = false, $sort = false)
+    {
+        $hashes = [];
+        $cart = ci()->carts->getCart('products')->getItems();
+        $hashes = [];
+        foreach ($cart as $item) {
+            $hashes[] = $item['hash'] . ($withCount ? $item['count'] : '');
+        }
+        if ($sort) {
+            sort($hashes);
+        }
+        return $hashes;
     }
 
 }

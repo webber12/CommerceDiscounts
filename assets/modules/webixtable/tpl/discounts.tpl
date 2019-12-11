@@ -77,7 +77,7 @@
                     ]},
                     {view:"select", label:"Группа пользователей", name:"user_group", options:"[+module_url+]action.php?action=WebuserGroupsList&module_id=[+module_id+]"},
                     { margin:5, cols:[
-                        {view:"select", label:"", name:"condition_type", options:[{id:1, value:"для каждого"}, {id:2, value:"начиная с"} ]},
+                        {view:"select", label:"", name:"condition_type", options:[{id:1, value:"для каждого"}, {id:2, value:"начиная с"}, {id:3, value:"при достижении (beta)"} ]},
                         {view:"counter", label:"", name:"condition_count", min:"1", value:"1", css:"wide_counter"},
                         {view:"select", label:"", name:"condition_item", options:[{id:1, value:"шт"}]},
                     ]},
@@ -128,7 +128,7 @@
                     ]},
                     {view:"select", label:"Группа пользователей", name:"user_group", options:"[+module_url+]action.php?action=WebuserGroupsList&module_id=[+module_id+]"},
                     { margin:5, cols:[
-                        {view:"select", label:"", name:"condition_type", options:[{id:1, value:"для каждого"}, {id:2, value:"начиная с"} ]},
+                        {view:"select", label:"", name:"condition_type", options:[{id:1, value:"для каждого"}, {id:2, value:"начиная с"}, {id:3, value:"при достижении (beta)"} ]},
                         {view:"counter", label:"", name:"condition_count", min:"1", value:"1", css:"wide_counter"},
                         {view:"select", label:"", name:"condition_item", options:[{id:1, value:"шт"}, {id:2, value:"руб"}], value:"1"},
                     ]},

@@ -5,6 +5,15 @@ var CommerceDiscounts = {
             e.preventDefault();
             self.makeAction($(this), e);
         })
+
+        $(document).on("cart-add-complete.commerce", function(){
+            self.sendRequest({'action' : 'update'});
+        });
+
+        $(document).on("cart-remove-complete.commerce", function(){
+            self.sendRequest({'action' : 'update'});
+        });
+
     },
     makeAction: function(el, event){
         var action = el.attr('data-commerce-action-discount'),
@@ -42,18 +51,23 @@ var CommerceDiscounts = {
     }
 }
 /* events
-// commerce-discounts-recount-discount-ok
-// commerce-discounts-remove-discount-ok
+// commerce-discounts-recount
+// commerce-discounts-remove
+// commerce-discounts-reload
 */
 $(document).ready(function(){
 
     CommerceDiscounts.bind();
 
-    $(document).on("commerce-discounts-recount-discount-ok", function(){
+    $(document).on("commerce-discounts-recount", function(){
         Commerce.reloadCarts();
     })
     
-    $(document).on("commerce-discounts-remove-discount-ok", function(){
+    $(document).on("commerce-discounts-remove", function(){
+        Commerce.reloadCarts();
+    })
+    
+    $(document).on("commerce-discounts-reload", function(){
         Commerce.reloadCarts();
     })
 
