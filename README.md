@@ -65,7 +65,7 @@
 # Примечание
 - для корректной работы пересчета в корзине необходимо заменить атрибут поля ввода количества data-commerce-action="recount" на data-commerce-action-discount="recount", атрибут элемента для удаления из корзины data-commerce-action="remove" на data-commerce-action-discount="remove"
 - после пересчета корзины дополнительно вызываются 2 js-события: commerce-discounts-recount-discount-ok (после пересчета количества) и commerce-discounts-remove-discount-ok (после удаления строки) для дополнительного функционала (уведомлений и т.п.)
-
+- требуется версия MySQL >=5.6
 
 
 
