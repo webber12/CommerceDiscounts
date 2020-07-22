@@ -57,7 +57,7 @@ class CommerceDiscountsController
     }
     
     protected function getTable($table) {
-        return $this->modx->db->getFullTableName($table);
+        return $this->modx->getFullTableName($table);
     }
     
     protected function getCart($name = 'cart') {
